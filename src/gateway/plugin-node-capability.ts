@@ -13,8 +13,30 @@ export type PluginNodeCapabilitySurface = {
 
 export type PluginNodeCapabilityClient = {
   pluginSurfaceUrls?: Record<string, string>;
+  pluginNodeCapabilitySurfaces?: Record<string, PluginNodeCapabilitySurface>;
   pluginNodeCapabilities?: Record<string, { capability: string; expiresAtMs: number }>;
 };
+
+export function indexPluginNodeCapabilitySurfaces(
+  surfaces: readonly PluginNodeCapabilitySurface[],
+): Record<string, PluginNodeCapabilitySurface> {
+  const indexed: Record<string, PluginNodeCapabilitySurface> = {};
+  for (const entry of surfaces) {
+    const surface = normalizeSurface(entry.surface);
+    if (!surface) {
+      continue;
+    }
+    const existing = indexed[surface];
+    const next = { ...entry, surface };
+    if (
+      !existing ||
+      resolvePluginNodeCapabilityTtlMs(next) < resolvePluginNodeCapabilityTtlMs(existing)
+    ) {
+      indexed[surface] = next;
+    }
+  }
+  return indexed;
+}
 
 export type NormalizedPluginNodeCapabilityUrl = {
   pathname: string;
@@ -183,9 +205,10 @@ export function refreshClientPluginNodeCapability(params: {
   if (!existingUrl) {
     return undefined;
   }
+  const capabilitySurface = params.client.pluginNodeCapabilitySurfaces?.[surface] ?? params.surface;
   const capability = mintPluginNodeCapabilityToken();
   const nowMs = params.nowMs ?? Date.now();
-  const expiresAtMs = nowMs + resolvePluginNodeCapabilityTtlMs(params.surface);
+  const expiresAtMs = nowMs + resolvePluginNodeCapabilityTtlMs(capabilitySurface);
   const scopedUrl = replacePluginNodeCapabilityInScopedHostUrl(existingUrl, capability);
   if (!scopedUrl) {
     return undefined;
@@ -194,7 +217,7 @@ export function refreshClientPluginNodeCapability(params: {
   params.client.pluginSurfaceUrls[surface] = scopedUrl;
   setClientPluginNodeCapability({
     client: params.client,
-    surface: params.surface,
+    surface: capabilitySurface,
     capability,
     expiresAtMs,
   });

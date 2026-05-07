@@ -159,7 +159,9 @@ function respondRefreshedPluginSurface(params: {
   const refreshed = params.client
     ? refreshClientPluginNodeCapability({
         client: params.client,
-        surface: { surface: params.surface },
+        surface: params.client.pluginNodeCapabilitySurfaces?.[params.surface] ?? {
+          surface: params.surface,
+        },
       })
     : undefined;
   if (!refreshed) {

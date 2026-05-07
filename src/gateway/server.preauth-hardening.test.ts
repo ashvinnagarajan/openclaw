@@ -214,8 +214,8 @@ describe("gateway pre-auth hardening", () => {
           id: "oversized-connect",
           method: "connect",
           params: {
-            minProtocol: 3,
-            maxProtocol: 3,
+            minProtocol: 4,
+            maxProtocol: 4,
             client: { id: "test", version: "1.0.0", platform: "test", mode: "test" },
             pathEnv: large,
             role: "operator",

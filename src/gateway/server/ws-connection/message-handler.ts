@@ -73,7 +73,9 @@ import {
 import { checkBrowserOrigin } from "../../origin-check.js";
 import {
   buildPluginNodeCapabilityScopedHostUrl,
+  indexPluginNodeCapabilitySurfaces,
   mintPluginNodeCapabilityToken,
+  type PluginNodeCapabilitySurface,
   resolvePluginNodeCapabilityTtlMs,
   setClientPluginNodeCapability,
 } from "../../plugin-node-capability.js";
@@ -189,7 +191,7 @@ export type GatewayWsMessageHandlerParams = {
   requestOrigin?: string;
   requestUserAgent?: string;
   pluginSurfaceBaseUrl?: string;
-  pluginNodeCapabilitySurfaces?: string[];
+  pluginNodeCapabilities?: PluginNodeCapabilitySurface[];
   connectNonce: string;
   getResolvedAuth: () => ResolvedGatewayAuth;
   getRequiredSharedGatewaySessionGeneration?: () => string | undefined;
@@ -234,7 +236,7 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
     requestOrigin,
     requestUserAgent,
     pluginSurfaceBaseUrl,
-    pluginNodeCapabilitySurfaces = [],
+    pluginNodeCapabilities = [],
     connectNonce,
     getResolvedAuth,
     getRequiredSharedGatewaySessionGeneration,
@@ -1316,21 +1318,22 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
         }
 
         const pluginSurfaceUrls: Record<string, string> = {};
+        const pluginNodeCapabilitySurfaces =
+          indexPluginNodeCapabilitySurfaces(pluginNodeCapabilities);
         const pendingPluginNodeCapabilities: Array<{
-          surface: { surface: string };
+          surface: PluginNodeCapabilitySurface;
           capability: string;
           expiresAtMs: number;
         }> = [];
         if (pluginSurfaceBaseUrl) {
-          for (const surface of pluginNodeCapabilitySurfaces) {
-            const pluginCapabilitySurface = { surface };
+          for (const pluginCapabilitySurface of Object.values(pluginNodeCapabilitySurfaces)) {
             const capability = mintPluginNodeCapabilityToken();
             const expiresAtMs =
               Date.now() + resolvePluginNodeCapabilityTtlMs(pluginCapabilitySurface);
             const scopedUrl =
               buildPluginNodeCapabilityScopedHostUrl(pluginSurfaceBaseUrl, capability) ??
               pluginSurfaceBaseUrl;
-            pluginSurfaceUrls[surface] = scopedUrl;
+            pluginSurfaceUrls[pluginCapabilitySurface.surface] = scopedUrl;
             pendingPluginNodeCapabilities.push({
               surface: pluginCapabilitySurface,
               capability,
@@ -1354,6 +1357,9 @@ export function attachGatewayWsMessageHandler(params: GatewayWsMessageHandlerPar
           presenceKey,
           clientIp: reportedClientIp,
           ...(Object.keys(pluginSurfaceUrls).length > 0 ? { pluginSurfaceUrls } : {}),
+          ...(Object.keys(pluginNodeCapabilitySurfaces).length > 0
+            ? { pluginNodeCapabilitySurfaces }
+            : {}),
         };
         for (const entry of pendingPluginNodeCapabilities) {
           setClientPluginNodeCapability({

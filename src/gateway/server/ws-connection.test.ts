@@ -64,6 +64,7 @@ function createTestSocket(params: { ping?: boolean } = {}): TestSocket {
 async function connectTestWs(
   params: {
     host?: string;
+    headers?: Record<string, string>;
     socket?: TestSocket;
     clients?: Set<unknown>;
     options?: Partial<Parameters<typeof attachGatewayWsConnectionHandler>[0]>;
@@ -77,7 +78,7 @@ async function connectTestWs(
   } as unknown as WebSocketServer;
   const socket = params.socket ?? createTestSocket();
   const upgradeReq = {
-    headers: { host: params.host ?? "127.0.0.1:19001" },
+    headers: { host: params.host ?? "127.0.0.1:19001", ...params.headers },
     socket: { localAddress: "127.0.0.1" },
   };
   const clients = params.clients ?? new Set<unknown>();
@@ -158,16 +159,37 @@ describe("attachGatewayWsConnectionHandler", () => {
       options: {
         port: 18789,
         pluginSurfaceScheme: "https",
-        getPluginNodeCapabilitySurfaces: () => ["canvas"],
+        getPluginNodeCapabilities: () => [{ surface: "canvas", ttlMs: 1234 }],
       },
     });
 
     const handlerParams = passed as {
       pluginSurfaceBaseUrl?: string;
-      pluginNodeCapabilitySurfaces?: string[];
+      pluginNodeCapabilities?: Array<{ surface: string; ttlMs?: number }>;
     };
     expect(handlerParams.pluginSurfaceBaseUrl).toBe("https://gateway.example.com:443");
-    expect(handlerParams.pluginNodeCapabilitySurfaces).toEqual(["canvas"]);
+    expect(handlerParams.pluginNodeCapabilities).toEqual([{ surface: "canvas", ttlMs: 1234 }]);
+  });
+
+  it("prefers forwarded host over bind host for generic plugin surface URLs", async () => {
+    const { passed } = await connectTestWs({
+      host: "10.0.0.2:18789",
+      headers: {
+        "x-forwarded-host": "gateway.example.com",
+        "x-forwarded-proto": "https",
+      },
+      options: {
+        gatewayHost: "10.0.0.2",
+        port: 18789,
+        pluginSurfaceScheme: "http",
+        getPluginNodeCapabilities: () => [{ surface: "canvas" }],
+      },
+    });
+
+    const handlerParams = passed as {
+      pluginSurfaceBaseUrl?: string;
+    };
+    expect(handlerParams.pluginSurfaceBaseUrl).toBe("https://gateway.example.com:443");
   });
 
   it("rejects late client registration after a pre-connect socket close", async () => {

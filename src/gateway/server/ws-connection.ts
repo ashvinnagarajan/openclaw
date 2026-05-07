@@ -14,6 +14,7 @@ import type { ResolvedGatewayAuth } from "../auth.js";
 import { resolvePreauthHandshakeTimeoutMs } from "../handshake-timeouts.js";
 import { resolveHostedPluginSurfaceUrl } from "../hosted-plugin-surface-url.js";
 import { isLoopbackAddress } from "../net.js";
+import type { PluginNodeCapabilitySurface } from "../plugin-node-capability.js";
 import { MAX_PAYLOAD_BYTES, MAX_PREAUTH_PAYLOAD_BYTES } from "../server-constants.js";
 import { clearNodeWakeState } from "../server-methods/nodes-wake-state.js";
 import type { GatewayRequestContext, GatewayRequestHandlers } from "../server-methods/types.js";
@@ -125,7 +126,7 @@ export type GatewayWsSharedHandlerParams = {
   port: number;
   gatewayHost?: string;
   pluginSurfaceScheme?: "http" | "https";
-  getPluginNodeCapabilitySurfaces?: () => string[];
+  getPluginNodeCapabilities?: () => PluginNodeCapabilitySurface[];
   resolvedAuth: ResolvedGatewayAuth;
   getResolvedAuth?: () => ResolvedGatewayAuth;
   getRequiredSharedGatewaySessionGeneration?: () => string | undefined;
@@ -198,9 +199,8 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
     clients,
     preauthConnectionBudget,
     port,
-    gatewayHost,
     pluginSurfaceScheme,
-    getPluginNodeCapabilitySurfaces,
+    getPluginNodeCapabilities,
     resolvedAuth,
     getResolvedAuth = () => resolvedAuth,
     getRequiredSharedGatewaySessionGeneration = () =>
@@ -248,14 +248,12 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
     const forwardedFor = headerValue(upgradeReq.headers["x-forwarded-for"]);
     const realIp = headerValue(upgradeReq.headers["x-real-ip"]);
 
-    const pluginNodeCapabilitySurfaces = getPluginNodeCapabilitySurfaces?.() ?? [];
-    const pluginSurfaceHostOverride =
-      gatewayHost && gatewayHost !== "0.0.0.0" && gatewayHost !== "::" ? gatewayHost : undefined;
+    const pluginNodeCapabilities = getPluginNodeCapabilities?.() ?? [];
     const pluginSurfaceBaseUrl =
-      pluginNodeCapabilitySurfaces.length > 0
+      pluginNodeCapabilities.length > 0
         ? resolveHostedPluginSurfaceUrl({
             port,
-            hostOverride: pluginSurfaceHostOverride,
+            forwardedHost: upgradeReq.headers["x-forwarded-host"],
             requestHost: upgradeReq.headers.host,
             forwardedProto: upgradeReq.headers["x-forwarded-proto"],
             localAddress: upgradeReq.socket?.localAddress,
@@ -450,7 +448,7 @@ export function attachGatewayWsConnectionHandler(params: AttachGatewayWsConnecti
       requestOrigin,
       requestUserAgent,
       pluginSurfaceBaseUrl,
-      pluginNodeCapabilitySurfaces,
+      pluginNodeCapabilities,
       connectNonce,
       getResolvedAuth,
       getRequiredSharedGatewaySessionGeneration,

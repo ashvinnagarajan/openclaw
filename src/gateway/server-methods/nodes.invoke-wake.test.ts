@@ -257,6 +257,8 @@ async function ackPending(nodeId: string, ids: string[], commands?: string[]) {
 
 describe("node plugin surface refresh", () => {
   it("refreshes generic plugin surface capability urls", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000);
     const respond = vi.fn();
     const client = {
       connect: {
@@ -264,6 +266,9 @@ describe("node plugin surface refresh", () => {
       },
       pluginSurfaceUrls: {
         canvas: "http://127.0.0.1:18789/__openclaw__/cap/old-token",
+      },
+      pluginNodeCapabilitySurfaces: {
+        canvas: { surface: "canvas", ttlMs: 100 },
       },
     };
 
@@ -283,7 +288,7 @@ describe("node plugin surface refresh", () => {
         pluginSurfaceUrls: {
           canvas: expect.stringContaining("/__openclaw__/cap/"),
         },
-        expiresAtMs: expect.any(Number),
+        expiresAtMs: 1_100,
       },
       undefined,
     );

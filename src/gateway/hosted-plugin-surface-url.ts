@@ -5,6 +5,7 @@ type HostSource = string | null | undefined;
 export type HostedPluginSurfaceUrlParams = {
   port?: number;
   hostOverride?: HostSource;
+  forwardedHost?: HostSource | HostSource[];
   requestHost?: HostSource;
   forwardedProto?: HostSource | HostSource[];
   localAddress?: HostSource;
@@ -54,30 +55,41 @@ const parseForwardedProto = (value: HostSource | HostSource[]) => {
   return value;
 };
 
+const parseForwardedHost = (value: HostSource | HostSource[]) => {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return raw?.split(",")[0]?.trim();
+};
+
 export function resolveHostedPluginSurfaceUrl(params: HostedPluginSurfaceUrlParams) {
   const port = params.port;
   if (!port) {
     return undefined;
   }
 
-  const scheme =
-    params.scheme ??
-    (parseForwardedProto(params.forwardedProto)?.trim() === "https" ? "https" : "http");
+  const forwardedScheme = parseForwardedProto(params.forwardedProto)?.trim();
+  const scheme = forwardedScheme === "https" ? "https" : (params.scheme ?? "http");
 
   const override = normalizeHost(params.hostOverride, true);
+  const forwardedHostRaw = parseForwardedHost(params.forwardedHost);
+  const parsedForwardedHost = parseHostHeader(forwardedHostRaw);
   const parsedRequestHost = parseHostHeader(params.requestHost);
   const requestHost = normalizeHost(parsedRequestHost.host, !!override);
-  const localAddress = normalizeHost(params.localAddress, Boolean(override || requestHost));
+  const forwardedHost = normalizeHost(parsedForwardedHost.host, !!override);
+  const advertisedHost = forwardedHost ? parsedForwardedHost : parsedRequestHost;
+  const localAddress = normalizeHost(
+    params.localAddress,
+    Boolean(override || forwardedHost || requestHost),
+  );
 
-  const host = override || requestHost || localAddress;
+  const host = override || forwardedHost || requestHost || localAddress;
   if (!host) {
     return undefined;
   }
 
   let exposedPort = port;
-  if (!override && requestHost && port === 18789) {
-    if (parsedRequestHost.port && parsedRequestHost.port > 0) {
-      exposedPort = parsedRequestHost.port;
+  if (!override && (forwardedHost || requestHost) && port === 18789) {
+    if (advertisedHost.port && advertisedHost.port > 0) {
+      exposedPort = advertisedHost.port;
     } else if (scheme === "https") {
       exposedPort = 443;
     } else if (scheme === "http") {

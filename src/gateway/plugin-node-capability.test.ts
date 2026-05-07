@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   buildPluginNodeCapabilityScopedHostUrl,
   hasAuthorizedPluginNodeCapability,
+  indexPluginNodeCapabilitySurfaces,
   normalizePluginNodeCapabilityScopedUrl,
   refreshClientPluginNodeCapability,
   replacePluginNodeCapabilityInScopedHostUrl,
@@ -90,15 +91,31 @@ describe("plugin node capability helpers", () => {
     });
   });
 
+  test("indexes plugin capability surfaces with shortest ttl per surface", () => {
+    expect(
+      indexPluginNodeCapabilitySurfaces([
+        { surface: "canvas", ttlMs: 5_000 },
+        { surface: " canvas ", ttlMs: 100 },
+        { surface: "files" },
+      ]),
+    ).toEqual({
+      canvas: { surface: "canvas", ttlMs: 100 },
+      files: { surface: "files" },
+    });
+  });
+
   test("refreshes client plugin surface url and stored capability", () => {
     const client = makeClient({
       pluginSurfaceUrls: {
         canvas: "http://127.0.0.1:18789/__openclaw__/cap/old-token",
       },
+      pluginNodeCapabilitySurfaces: {
+        canvas: { surface: "canvas", ttlMs: 100 },
+      },
     });
     const refreshed = refreshClientPluginNodeCapability({
       client,
-      surface: { surface: "canvas", ttlMs: 100 },
+      surface: { surface: "canvas" },
       nowMs: 1_000,
     });
     expect(refreshed?.surface).toBe("canvas");

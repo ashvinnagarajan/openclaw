@@ -1,5 +1,8 @@
 import type { PluginRegistry } from "../../../plugins/registry.js";
-import type { PluginNodeCapabilitySurface } from "../../plugin-node-capability.js";
+import {
+  resolvePluginNodeCapabilityTtlMs,
+  type PluginNodeCapabilitySurface,
+} from "../../plugin-node-capability.js";
 import type { PluginRoutePathContext } from "./path-context.js";
 import { findMatchingPluginHttpRoutes } from "./route-match.js";
 
@@ -28,12 +31,26 @@ export function findMatchingPluginNodeCapabilityRoute(
 }
 
 export function listPluginNodeCapabilitySurfaces(registry: PluginRegistry): string[] {
-  const surfaces = new Set<string>();
+  return listPluginNodeCapabilities(registry).map((entry) => entry.surface);
+}
+
+export function listPluginNodeCapabilities(
+  registry: PluginRegistry,
+): PluginNodeCapabilitySurface[] {
+  const surfaces = new Map<string, PluginNodeCapabilitySurface>();
   for (const route of registry.httpRoutes ?? []) {
     const surface = route.nodeCapability?.surface?.trim();
     if (surface) {
-      surfaces.add(surface);
+      const next = { ...route.nodeCapability, surface };
+      const existing = surfaces.get(surface);
+      if (!existing || resolveTtlMs(next) < resolveTtlMs(existing)) {
+        surfaces.set(surface, next);
+      }
     }
   }
-  return [...surfaces].toSorted();
+  return [...surfaces.values()].toSorted((a, b) => a.surface.localeCompare(b.surface));
+}
+
+function resolveTtlMs(surface: PluginNodeCapabilitySurface) {
+  return resolvePluginNodeCapabilityTtlMs(surface);
 }

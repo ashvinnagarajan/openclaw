@@ -1317,7 +1317,7 @@ export async function startGatewayServer(
     }
 
     const { attachGatewayWsHandlers } = await import("./server-ws-runtime.js");
-    const { listPluginNodeCapabilitySurfaces } =
+    const { listPluginNodeCapabilities } =
       await import("./server/plugins-http/route-capability.js");
     const pluginSurfaceScheme = gatewayTls.enabled ? "https" : "http";
     attachGatewayWsHandlers({
@@ -1327,7 +1327,7 @@ export async function startGatewayServer(
       port,
       gatewayHost: bindHost ?? undefined,
       pluginSurfaceScheme,
-      getPluginNodeCapabilitySurfaces: () => listPluginNodeCapabilitySurfaces(pluginRegistry),
+      getPluginNodeCapabilities: () => listPluginNodeCapabilities(pluginRegistry),
       resolvedAuth,
       getResolvedAuth,
       getRequiredSharedGatewaySessionGeneration: () =>
