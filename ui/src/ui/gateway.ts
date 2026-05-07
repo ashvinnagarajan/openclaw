@@ -129,7 +129,7 @@ export type GatewayHelloOk = {
     scopes: string[];
     issuedAtMs?: number;
   };
-  canvasHostUrl?: string;
+  pluginSurfaceUrls?: Record<string, string>;
   policy?: { tickIntervalMs?: number };
 };
 

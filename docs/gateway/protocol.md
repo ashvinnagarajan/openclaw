@@ -106,13 +106,14 @@ handshake failure.
 `server`, `features`, `snapshot`, and `policy` are all required by the schema
 (`src/gateway/protocol/schema/frames.ts`). `auth` is also required and reports
 the negotiated role/scopes. `pluginSurfaceUrls` is optional and maps plugin
-surface names, such as `canvas`, to scoped hosted URLs. `canvasHostUrl` is a
-deprecated compatibility alias for `pluginSurfaceUrls.canvas`.
+surface names, such as `canvas`, to scoped hosted URLs.
 
 Scoped plugin surface URLs may expire. Nodes can call
 `node.pluginSurface.refresh` with `{ "surface": "canvas" }` to receive a fresh
-entry in `pluginSurfaceUrls`; `node.canvas.capability.refresh` remains as a
-deprecated Canvas-only alias for older native clients.
+entry in `pluginSurfaceUrls`. The experimental Canvas plugin refactor does not
+support the deprecated `canvasHostUrl`, `canvasCapability`, or
+`node.canvas.capability.refresh` compatibility path; current native clients and
+gateways must use plugin surfaces.
 
 When no device token is issued, `hello-ok.auth` reports the negotiated
 permissions without token fields:

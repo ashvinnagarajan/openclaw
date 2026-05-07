@@ -289,40 +289,6 @@ describe("node plugin surface refresh", () => {
     );
     expect(client.pluginSurfaceUrls.canvas).not.toContain("old-token");
   });
-
-  it("keeps legacy canvas capability refresh as a compatibility alias", async () => {
-    const respond = vi.fn();
-    const client = {
-      connect: {
-        client: { id: "node-1", mode: "node" },
-      },
-      pluginSurfaceUrls: {
-        canvas: "http://127.0.0.1:18789/__openclaw__/cap/old-token",
-      },
-    };
-
-    await nodeHandlers["node.canvas.capability.refresh"]({
-      req: { type: "req", id: "r1", method: "node.canvas.capability.refresh", params: {} },
-      params: {},
-      client: client as never,
-      isWebchatConnect: () => false,
-      respond,
-      context: {} as never,
-    });
-
-    expect(respond).toHaveBeenCalledWith(
-      true,
-      {
-        canvasCapability: expect.any(String),
-        canvasCapabilityExpiresAtMs: expect.any(Number),
-        canvasHostUrl: expect.stringContaining("/__openclaw__/cap/"),
-        pluginSurfaceUrls: {
-          canvas: expect.stringContaining("/__openclaw__/cap/"),
-        },
-      },
-      undefined,
-    );
-  });
 });
 
 describe("node.invoke APNs wake path", () => {

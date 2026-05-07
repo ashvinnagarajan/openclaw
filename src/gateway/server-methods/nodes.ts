@@ -155,7 +155,6 @@ function respondRefreshedPluginSurface(params: {
   surface: string;
   client: GatewayClient | null;
   respond: RespondFn;
-  legacyCanvasPayload?: boolean;
 }) {
   const refreshed = params.client
     ? refreshClientPluginNodeCapability({
@@ -173,18 +172,11 @@ function respondRefreshedPluginSurface(params: {
   }
   params.respond(
     true,
-    params.legacyCanvasPayload
-      ? {
-          canvasCapability: refreshed.capability,
-          canvasCapabilityExpiresAtMs: refreshed.expiresAtMs,
-          canvasHostUrl: refreshed.scopedUrl,
-          pluginSurfaceUrls: { [refreshed.surface]: refreshed.scopedUrl },
-        }
-      : {
-          surface: refreshed.surface,
-          pluginSurfaceUrls: { [refreshed.surface]: refreshed.scopedUrl },
-          expiresAtMs: refreshed.expiresAtMs,
-        },
+    {
+      surface: refreshed.surface,
+      pluginSurfaceUrls: { [refreshed.surface]: refreshed.scopedUrl },
+      expiresAtMs: refreshed.expiresAtMs,
+    },
     undefined,
   );
 }
@@ -902,14 +894,6 @@ export const nodeHandlers: GatewayRequestHandlers = {
       surface: parsed.surface,
       client,
       respond,
-    });
-  },
-  "node.canvas.capability.refresh": async ({ respond, client }) => {
-    respondRefreshedPluginSurface({
-      surface: "canvas",
-      client,
-      respond,
-      legacyCanvasPayload: true,
     });
   },
   "node.pending.pull": async ({ params, respond, client, context }) => {

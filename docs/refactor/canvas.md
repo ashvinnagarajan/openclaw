@@ -53,6 +53,7 @@ Done:
 - Moved A2UI build/copy implementation under `extensions/canvas/scripts` and replaced root build wiring with generic bundled-plugin asset hooks.
 - Removed the runtime legacy top-level `canvasHost` config alias.
 - Kept the Canvas doctor migration so `openclaw doctor --fix` rewrites old `canvasHost` configs into `plugins.entries.canvas.config.host`.
+- Removed old-agent Canvas protocol compatibility. Native clients and gateways now use only `pluginSurfaceUrls.canvas` plus `node.pluginSurface.refresh`; the deprecated `canvasHostUrl`, `canvasCapability`, and `node.canvas.capability.refresh` path is intentionally unsupported in this experimental refactor.
 - Updated generated plugin inventory to include Canvas.
 - Added plugin reference docs at `docs/plugins/reference/canvas.md`.
 

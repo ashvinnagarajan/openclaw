@@ -115,7 +115,6 @@ actor GatewayConnection {
 
     private struct PluginSurfaceRefreshResponse: Decodable {
         let pluginSurfaceUrls: [String: AnyCodable]?
-        let canvasHostUrl: String?
     }
 
     private struct LossyDecodable<Value: Decodable>: Decodable {
@@ -324,23 +323,16 @@ actor GatewayConnection {
             if !trimmed.isEmpty { return trimmed }
         }
         guard let snapshot = self.lastSnapshot else { return nil }
-        let raw = (snapshot.pluginsurfaceurls?["canvas"]?.value as? String) ?? snapshot.canvashosturl
+        let raw = snapshot.pluginsurfaceurls?["canvas"]?.value as? String
         let trimmed = raw?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? ""
         return trimmed.isEmpty ? nil : trimmed
     }
 
     @discardableResult
     func refreshCanvasPluginSurfaceUrl(timeoutMs: Double = 8000) async -> String? {
-        if let refreshed = await self.refreshPluginSurfaceUrl(
+        await self.refreshPluginSurfaceUrl(
             method: "node.pluginSurface.refresh",
             params: ["surface": AnyCodable("canvas")],
-            timeoutMs: timeoutMs)
-        {
-            return refreshed
-        }
-        return await self.refreshPluginSurfaceUrl(
-            method: "node.canvas.capability.refresh",
-            params: [:],
             timeoutMs: timeoutMs)
     }
 
@@ -352,7 +344,7 @@ actor GatewayConnection {
         do {
             let data = try await self.requestRaw(method: method, params: params, timeoutMs: timeoutMs)
             let decoded = try self.decoder.decode(PluginSurfaceRefreshResponse.self, from: data)
-            let raw = (decoded.pluginSurfaceUrls?["canvas"]?.value as? String) ?? decoded.canvasHostUrl
+            let raw = decoded.pluginSurfaceUrls?["canvas"]?.value as? String
             let trimmed = raw?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? ""
             if !trimmed.isEmpty {
                 self.canvasPluginSurfaceUrlOverride = trimmed

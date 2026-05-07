@@ -205,11 +205,6 @@ class GatewaySession(
         params = buildJsonObject { put("surface", JsonPrimitive("canvas")) },
         timeoutMs = timeoutMs,
       )
-        ?: refreshPluginSurfaceUrl(
-          method = "node.canvas.capability.refresh",
-          params = buildJsonObject {},
-          timeoutMs = timeoutMs,
-        )
     if (!refreshed.isNullOrBlank()) {
       pluginSurfaceUrls = pluginSurfaceUrls + ("canvas" to refreshed)
     }
@@ -251,7 +246,6 @@ class GatewaySession(
           .asObjectOrNull()
           ?.get("canvas")
           .asStringOrNull()
-          ?: obj["canvasHostUrl"].asStringOrNull()
       normalizeCanvasHostUrl(raw, conn.endpoint, isTlsConnection = conn.tls != null)
     } catch (err: Throwable) {
       Log.d("OpenClawGateway", "$method failed: ${err.message ?: err::class.java.simpleName}")
@@ -617,12 +611,6 @@ class GatewaySession(
             ?.let { normalized -> surface to normalized }
         } ?: emptyList()
       pluginSurfaceUrls = normalizedPluginSurfaceUrls.toMap()
-      if ("canvas" !in pluginSurfaceUrls) {
-        normalizeCanvasHostUrl(obj["canvasHostUrl"].asStringOrNull(), endpoint, isTlsConnection = tls != null)
-          ?.let { legacyCanvasHostUrl ->
-            pluginSurfaceUrls = pluginSurfaceUrls + ("canvas" to legacyCanvasHostUrl)
-          }
-      }
       val sessionDefaults =
         obj["snapshot"]
           .asObjectOrNull()

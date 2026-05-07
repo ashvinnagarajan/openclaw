@@ -41,9 +41,9 @@ authoritative pin without explicit user intent or other out-of-band verification
 4. Gateway waits for approval, then sends `pair-ok` and `hello-ok`.
 
 Historically, `hello-ok` returned `serverName`; hosted plugin surfaces are now
-advertised through `pluginSurfaceUrls`. `canvasHostUrl` is still emitted as a
-deprecated alias for `pluginSurfaceUrls.canvas` so older native clients keep
-working.
+advertised through `pluginSurfaceUrls`. Canvas/A2UI uses
+`pluginSurfaceUrls.canvas`; the deprecated `canvasHostUrl` alias is not part of
+the refactored protocol.
 
 ## Frames
 
